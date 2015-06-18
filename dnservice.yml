@@ -1,0 +1,9 @@
+dnservice:
+    bind-ip: 0.0.0.0
+    bind-port: 5300
+    ttl: 120
+    recursive-query: false
+    forwarder-ip: 8.8.8.8
+    forwarder-port: 53
+    db-connection-string: <%= ENV['DNS_DATABASE_URL'] %>
+    reload-key: <%= ENV['DNS_RELOAD_KEY'] %>
