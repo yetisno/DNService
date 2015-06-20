@@ -1,4 +1,4 @@
 class Cname < ActiveRecord::Base
-	validates :name, presence: true
+	validates :question, presence: true
 	validates :to_name, presence: true
 end
