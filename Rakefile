@@ -16,8 +16,9 @@ task :environment do
 		rKey = CONFIG['reload-key'] if !CONFIG['reload-key'].blank?
 		ENV['DNS_RELOAD_KEY'] = rKey
 	end
-	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile if !File.exist?(sqlFile) && ENV['DNS_DATABASE_URL'].blank?
-	ENV['DNS_DATABASE_URL'] = ENV['DNS_DATABASE_URL'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlFile)}"
+	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile if !File.exist?(sqlFile) && CONFIG['db-connection-string'].blank?
+	ENV['DNS_DATABASE_URL'] = CONFIG['db-connection-string'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlFile)}"
+	ActiveRecord::Base.establish_connection(ENV['DNS_DATABASE_URL']) unless ActiveRecord::Base.connected?
 end
 
 desc 'DNService | Run Application (Not Daemon)'
