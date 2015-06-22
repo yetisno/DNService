@@ -1,6 +1,6 @@
 require_relative 'config/environment'
 $PID_FILE='dnservice.pid'
-$RKEY_FILE='dnservice.rkey'
+$RKEY_FILE=File.join 'db', 'dnservice.rkey'
 
 def reload_key
 	CONFIG['reload-key'] || ENV['DNS_RELOAD_KEY'] || SecureRandom.hex(64)
