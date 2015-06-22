@@ -1,5 +1,5 @@
 # DNService
-The server module of [`DNSManager`](../../../DNSManager), this provide Domain Name Service and support base function like [A, CNAME, MX, NS, SOA]
+The server module of [`DNSManager`](../../../DNSManager), this provide Domain Name Service and support base function like [A, CNAME, MX, NS, SOA]. DNSManger = DNSAdmin + DNService
 
 and use `Rake` to manage process.
 
