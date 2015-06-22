@@ -194,7 +194,8 @@ class DNServer
 	def check_reload(resource_class)
 		return @updated if !resource_class.eql? TYPE::TXT
 		Log.i 'func: check_reload'
-		@updated = @uQuestion.include? CONFIG['reload-key'].upcase
+		@updated = @uQuestion.include? CONFIG['reload-key'].upcase &&
+			                               (@uQuestion.length - CONFIG['reload-key']).abs < 10
 		Log.i 'reload resource at next query.' if @updated
 		@updated
 	end

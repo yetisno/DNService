@@ -3,16 +3,17 @@ $PID_FILE='dnservice.pid'
 
 task :environment do
 	require 'securerandom'
-	sqlfile = 'dnservice.sqlite3'
-	rkey = `cat dnservice.rkey 2> /dev/null`
-	if rkey.empty?
+	sqlFile = File.join 'db', 'dnservice.sqlite3'
+	rKeyFile = 'dnservice.rkey'
+	rKey = `cat #{rKeyFile} 2> /dev/null`
+	if rKey.empty?
 		ENV['DNS_RELOAD_KEY'] = ENV['DNS_RELOAD_KEY'] || SecureRandom.hex(64)
 	else
-		ENV['DNS_RELOAD_KEY'] = rkey
+		ENV['DNS_RELOAD_KEY'] = rKey
 	end
-	File.write 'dnservice.rkey', ENV['DNS_RELOAD_KEY']
-	File.copy_stream File.join('assets', 'template.sqlite3'), sqlfile unless File.exist? sqlfile
-	ENV['DNS_DATABASE_URL'] = ENV['DNS_DATABASE_URL'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlfile)}"
+	File.write rKeyFile, ENV['DNS_RELOAD_KEY']
+	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile unless File.exist? sqlFile
+	ENV['DNS_DATABASE_URL'] = ENV['DNS_DATABASE_URL'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlFile)}"
 end
 
 desc 'DNService | Run Application (Not Daemon)'
@@ -64,7 +65,7 @@ end
 desc 'DNService | Reload Record'
 task reload: :environment do
 	Resolv::DNS.open(nameserver_port: [['127.0.0.1', CONFIG['bind-port']]]).
-		getresources(ENV['DNS_RELOAD_KEY'], Resolv::DNS::Resource::IN::TXT)
+		getresources(CONFIG['reload-key'], Resolv::DNS::Resource::IN::TXT)
 
 end
 
