@@ -6,6 +6,11 @@ def reload_key
 	CONFIG['reload-key'] || ENV['DNS_RELOAD_KEY'] || SecureRandom.hex(64)
 end
 
+task :secret do
+	require 'securerandom'
+	SecureRandom.hex(64)
+end
+
 task :environment do
 	require 'securerandom'
 	sqlFile = File.join 'db', 'dnservice.sqlite3'
