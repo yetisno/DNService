@@ -16,7 +16,7 @@ task :environment do
 		rKey = CONFIG['reload-key'] if !CONFIG['reload-key'].blank?
 		ENV['DNS_RELOAD_KEY'] = rKey
 	end
-	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile unless File.exist? sqlFile
+	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile if !File.exist?(sqlFile) && ENV['DNS_DATABASE_URL'].blank?
 	ENV['DNS_DATABASE_URL'] = ENV['DNS_DATABASE_URL'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlFile)}"
 end
 
