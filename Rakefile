@@ -1,66 +1,86 @@
-require_relative 'config/environment'
-$PID_FILE='dnservice.pid'
-$RKEY_FILE=File.join 'db', 'dnservice.rkey'
-
-def reload_key
-	CONFIG['reload-key'] || ENV['DNS_RELOAD_KEY'] || SecureRandom.hex(64)
+def alive?(pid)
+	begin
+		Process.getpgid(pid.to_i)
+		true
+	rescue
+		false
+	end
 end
+
+def load_conf
+	require 'active_support/core_ext/string/output_safety'
+	require 'yaml'
+	YAML.load(ERB.new(File.read(File.join('config', 'dnservice.yml'))).result)['dnservice']
+end
+
 
 task :secret do
 	require 'securerandom'
-	SecureRandom.hex(64)
+	secret = SecureRandom.hex(64)
+	puts secret
+	secret
 end
 
-task :environment do
-	require 'securerandom'
-	sqlFile = File.join 'db', 'dnservice.sqlite3'
-	rKey = `cat #{$RKEY_FILE} 2> /dev/null`
-	if rKey.empty?
-		ENV['DNS_RELOAD_KEY'] = reload_key
-	else
-		rKey = CONFIG['reload-key'] if !CONFIG['reload-key'].blank?
-		ENV['DNS_RELOAD_KEY'] = rKey
+task :checkConfig do
+	conf=load_conf
+	if conf['db-connection-string'].nil?
+		raise "db-connection-string can't be empty. Please set it at config/dnservice.yml or use environment variable DNS_DATABASE_URL"
 	end
-	File.copy_stream File.join('assets', 'template.sqlite3'), sqlFile if !File.exist?(sqlFile) && CONFIG['db-connection-string'].blank?
-	ENV['DNS_DATABASE_URL'] = CONFIG['db-connection-string'] || "sqlite3://#{ File.join(File.expand_path('..', __FILE__), sqlFile)}"
-	ActiveRecord::Base.establish_connection(ENV['DNS_DATABASE_URL']) unless ActiveRecord::Base.connected?
+	if conf['reload-key'].nil?
+		require 'securerandom'
+		secret = SecureRandom.hex(64)
+		raise "reload-key can't be empty. you can set reload-key: #{secret} at config/dnservice.yml or use environment variable DNS_RELOAD_KEY"
+	end
+end
+
+task environment: :checkConfig do
+	require_relative 'config/environment'
+	$PID_FILE='dnservice.pid'
+	if CONFIG['db-connection-string'].include?('sqlite3://')
+		sqliteFile = CONFIG['db-connection-string'].gsub 'sqlite3://', ''
+		File.copy_stream(File.join('assets', 'template.sqlite3'), sqliteFile) unless File.exist?(sqliteFile)
+	end
 end
 
 desc 'DNService | Run Application (Not Daemon)'
 task run: :environment do
-	File.write $RKEY_FILE, ENV['DNS_RELOAD_KEY']
-	puts 'DNService Starting...'
-	`ruby dnservice.rb`
+	pid = `cat #{$PID_FILE} 2> /dev/null`
+	if alive?(pid) && !pid.empty?
+		puts 'DNService is still running.'
+	else
+		File.delete $PID_FILE if File.exist? $PID_FILE
+		puts 'DNService Starting...'
+		`ruby dnservice.rb`
+	end
 end
 
 desc 'DNService | Start Service'
 task start: :environment do
-	File.write $RKEY_FILE, ENV['DNS_RELOAD_KEY']
 	pid = `cat #{$PID_FILE} 2> /dev/null`
-	if pid.empty?
+	if alive?(pid) && !pid.empty?
+		puts 'DNService is still running.'
+	else
+		File.delete $PID_FILE if File.exist? $PID_FILE
 		puts 'DNService Starting...'
 		fork do
 			`ruby dnservice.rb`
 		end
 		puts 'DNService Started!!'
-	else
-		puts 'DNService is still running.'
 	end
 end
 
 desc 'DNService | Stop Service'
 task stop: :environment do
 	pid = `cat #{$PID_FILE} 2> /dev/null`
-	if pid.empty?
-		puts 'DNService is not running.'
-	else
+	if alive?(pid) && !pid.empty?
 		puts 'DNService Exiting...'
 		`kill -QUIT #{pid} 2> /dev/null`
 		`while ps -p #{pid} > /dev/null; do sleep 1; done`
 		puts 'DNService Exited!!'
+	else
+		puts 'DNService is not running.'
 	end
 	File.delete $PID_FILE if File.exist? $PID_FILE
-	File.delete $RKEY_FILE if File.exist? $RKEY_FILE
 end
 
 desc 'DNService | Restart Service'
@@ -77,9 +97,8 @@ end
 
 desc 'DNService | Reload Record'
 task reload: :environment do
-	File.write $RKEY_FILE, ENV['DNS_RELOAD_KEY']
 	Resolv::DNS.open(nameserver_port: [['127.0.0.1', CONFIG['bind-port']]]).
-		getresources(reload_key, Resolv::DNS::Resource::IN::TXT)
+		getresources(CONFIG['reload-key'], Resolv::DNS::Resource::IN::TXT)
 
 end
 
