@@ -124,7 +124,7 @@ class DNServer
 				uName = name.upcase
 				cname_response transaction, name, @question
 				as = @as[uName]
-				if as.blank?
+				if !as.blank?
 					as.each { |a| a_response(transaction, a.to_ip, uName) }
 				else
 					FORWARDER.query(uName).answer.each do |ans|
