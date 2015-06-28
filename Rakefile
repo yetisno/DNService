@@ -1,3 +1,4 @@
+$PID_FILE='dnservice.pid'
 def alive?(pid)
 	begin
 		Process.getpgid(pid.to_i)
@@ -35,7 +36,6 @@ end
 
 task environment: :checkConfig do
 	require_relative 'config/environment'
-	$PID_FILE='dnservice.pid'
 	if CONFIG['db-connection-string'].include?('sqlite3://')
 		sqliteFile = CONFIG['db-connection-string'].gsub 'sqlite3://', ''
 		File.copy_stream(File.join('assets', 'template.sqlite3'), sqliteFile) unless File.exist?(sqliteFile)
@@ -70,7 +70,7 @@ task start: :environment do
 end
 
 desc 'DNService | Stop Service'
-task stop: :environment do
+task :stop do
 	pid = `cat #{$PID_FILE} 2> /dev/null`
 	if alive?(pid) && !pid.empty?
 		puts 'DNService Exiting...'
