@@ -209,11 +209,12 @@ class DNServer
 
 	def post_match(transaction)
 		if !@matched
+			if check_reload transaction.resource_class
+				nxdomain_response transaction
+			end
 			if RECURSIVE_QUERY
-				Log.i 'forward query'
+				Log.i "forward query: #{@uQuestion}"
 				forward_query transaction
-			else
-				nxdomain_response transaction if check_reload transaction.resource_class
 			end
 		end
 	end
