@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 gem 'sqlite3'
 gem 'pg'
 
-gem 'rubydns'
+gem 'rubydns', ' ~> 1.0.2'
 
 gem 'activerecord'
 gem 'activesupport'
